@@ -22,6 +22,15 @@ mutation ($text: String!){
   }
 }
 `
+const CHATS_SUBSCRIPTION = gql`
+  subscription OnNewChat {
+    messageSent {
+      _id
+      text
+      createdAt
+    }
+  }
+`
 
 const Messages = ({user}) => {
   if(!data) {
@@ -35,46 +44,60 @@ const Messages = ({user}) => {
 const ChatApp = () => <div><Messages user="Fahad" /></div>
 
 export default function Chat() {
-  const { loading, error, data } = useQuery(GET_MESSAGES);
+  const { loading, error, data, subscribeToMore } = useQuery(GET_MESSAGES);
   const [createMessage] = useMutation(CREATE_MESSAGE)
   console.log('data', loading, error, data)
-  const [messages, setMessages] = useState([]);
+  // const [messages, setMessages] = useState([]);
+
+  // useEffect(() => {
+  //   setMessages([
+  //     {
+  //       _id: 1,
+  //       text: 'Hello developer',
+  //       createdAt: new Date(),
+  //       user: {
+  //         _id: 1,
+  //         name: 'React Native',
+  //         avatar: 'https://placeimg.com/140/140/any',
+  //       },
+  //     },
+  //     {
+  //       _id: 2,
+  //       text: 'Hello!',
+  //       createdAt: new Date(),
+  //       user: {
+  //         _id: 2,
+  //         name: 'React Native',
+  //         avatar: 'https://placeimg.com/140/140/any',
+  //       },
+  //     },
+  //   ])
+  // }, [])
 
   useEffect(() => {
-    setMessages([
-      {
-        _id: 1,
-        text: 'Hello developer',
-        createdAt: new Date(),
-        user: {
-          _id: 1,
-          name: 'React Native',
-          avatar: 'https://placeimg.com/140/140/any',
-        },
+    subscribeToMore({
+      document: CHATS_SUBSCRIPTION,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData.data) return prev;
+        const newMessage = subscriptionData.data.messageSent;
+
+        return {
+          messages: [...prev.messages, newMessage],
+        };
       },
-      {
-        _id: 2,
-        text: 'Hello!',
-        createdAt: new Date(),
-        user: {
-          _id: 2,
-          name: 'React Native',
-          avatar: 'https://placeimg.com/140/140/any',
-        },
-      },
-    ])
+    });
   }, [])
 
-  const onSend = useCallback((messages = []) => {
-    console.log('messages', messages)
+  const onSend = useCallback((message) => {
+    console.log('messages', message)
     // setMessages(previousMessages => GiftedChat.append(previousMessages, messages))
-    createMessage({variables: {text: messages[0].text}})
+    createMessage({variables: {text: message[0].text}})
   }, [])
   return (
       // <ChatApp />
       <GiftedChat
         messages={data && data.messages ? data.messages.map(x => ({...x, user: x._id, createdAt: new Date(Number(x.createdAt))})) : []}
-        onSend={messages => onSend(messages)}
+        onSend={message => onSend(message)}
         user={{
           _id: 1,
           name: 'Fahad',
