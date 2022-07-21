@@ -46,6 +46,8 @@ const ChatApp = () => <div><Messages user="Fahad" /></div>
 export default function Chat() {
   const { loading, error, data, subscribeToMore } = useQuery(GET_MESSAGES);
   const [createMessage] = useMutation(CREATE_MESSAGE)
+  const msgs = data && data.messages && data.messages.length > 0 ? data.messages.slice().sort((a, b) => b.createdAt - a.createdAt) : []
+  console.log('messages', msgs)
   console.log('data', loading, error, data)
   // const [messages, setMessages] = useState([]);
 
@@ -96,7 +98,7 @@ export default function Chat() {
   return (
       // <ChatApp />
       <GiftedChat
-        messages={data && data.messages ? data.messages.map(x => ({...x, user: x._id, createdAt: new Date(Number(x.createdAt))})) : []}
+        messages={msgs.map(x => ({...x, user: x._id, createdAt: new Date(Number(x.createdAt))}))}
         onSend={message => onSend(message)}
         user={{
           _id: 1,
